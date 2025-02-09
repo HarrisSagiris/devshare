@@ -8,11 +8,8 @@ const fs = require('fs');
 
 const app = express();
 
-// Create HTTPS server with SSL certificates
-const server = https.createServer({
-  key: fs.readFileSync('/etc/letsencrypt/live/roastme.icu/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/roastme.icu/fullchain.pem')
-}, app);
+// Create HTTP server since SSL certs aren't available
+const server = http.createServer(app);
 
 const wss = new WebSocket.Server({ noServer: true });
 const proxy = httpProxy.createProxyServer();
