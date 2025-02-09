@@ -15,7 +15,8 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 const port = argv.port;
-const serverUrl = 'ws://135.181.149.116:5000/ws'; // Using ws:// since server doesn't support SSL
+const serverUrl = 'http://135.181.149.116:5000'; // Using http:// instead of ws://
+const wsUrl = 'ws://135.181.149.116:5000/ws';
 
 // First check if the local port is actually running
 const checkLocalPort = () => {
@@ -36,7 +37,7 @@ checkLocalPort()
     console.log(`✅ Found local server on port ${port}`);
     console.log('🔗 Connecting to DevShare server...');
     
-    const ws = new WebSocket(serverUrl);
+    const ws = new WebSocket(wsUrl);
 
     ws.on('open', () => {
       console.log('✅ Connected to DevShare server!');
@@ -50,6 +51,14 @@ checkLocalPort()
         const message = JSON.parse(data);
         if (message.type === 'connected') {
           console.log(`✨ Your localhost:${port} is now public at: http://${message.subdomain}.roastme.icu`);
+          // Test the HTTP connection
+          http.get(`${serverUrl}`, (res) => {
+            if (res.statusCode === 200) {
+              console.log('✅ HTTP connection successful');
+            }
+          }).on('error', (err) => {
+            console.error('❌ HTTP connection error:', err.message);
+          });
         } else if (message.type === 'request') {
           console.log(`📥 Incoming request: ${message.method} ${message.path}`);
         }

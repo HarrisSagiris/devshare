@@ -1,6 +1,6 @@
 {
   "name": "quickhost-cli",
-  "version": "1.7.45",
+  "version": "1.10.45",
   "description": "A tool for sharing local development servers",
   "main": "index.js",
   "bin": {
