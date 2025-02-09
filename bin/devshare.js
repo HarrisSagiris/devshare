@@ -14,7 +14,7 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 const port = argv.port;
-const serverUrl = 'ws://135.181.149.116:5000/ws';
+const serverUrl = 'wss://135.181.149.116:5000/ws';
 
 console.log('🔗 Connecting to DevShare server...');
 
