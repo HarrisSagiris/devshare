@@ -12,7 +12,15 @@ const app = express();
 const server = http.createServer(app);
 
 const wss = new WebSocket.Server({ noServer: true });
-const proxy = httpProxy.createProxyServer();
+const proxy = httpProxy.createProxyServer({
+  // Add CORS headers to proxy responses
+  changeOrigin: true,
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  }
+});
 
 // Store client connections with their subdomains
 const clients = new Map(); // subdomain -> {ws, port}
@@ -77,6 +85,14 @@ app.use((req, res) => {
   const client = clients.get(subdomain);
   if (!client) {
     return res.status(404).send('No client connected for this subdomain');
+  }
+
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res.status(200).end();
   }
 
   // Forward request details to client
