@@ -1,9 +1,10 @@
 {
-  "name": "devshare",
-  "version": "1.0.0",
+  "name": "quickhost-cli",
+  "version": "1.2.0",
+  "description": "A tool for sharing local development servers",
   "main": "index.js",
   "bin": {
-    "devshare": "./bin/devshare.js"
+    "quickhost": "bin/devshare.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,10 +12,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "A tool for sharing local development servers",
   "dependencies": {
-    "express": "^4.21.2",
-    "http-proxy": "^1.18.1",
     "ws": "^8.18.0",
     "yargs": "^17.7.2"
   }

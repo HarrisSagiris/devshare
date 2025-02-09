@@ -8,36 +8,36 @@ const argv = yargs(hideBin(process.argv))
   .option('port', {
     alias: 'p',
     type: 'number',
-    description: 'Port number to use',
-    default: 3000
-  })
-  .option('server', {
-    alias: 's', 
-    type: 'string',
-    description: 'DevShare server URL',
-    default: 'localhost:3000'
+    description: 'Local port number to expose',
+    demandOption: true
   })
   .argv;
 
 const port = argv.port;
-const serverUrl = argv.server.startsWith('http') ? argv.server : `http://${argv.server}`;
-const wsUrl = serverUrl.replace(/^http/, 'ws') + '/ws';
+const serverUrl = 'ws://localhost:3000/ws';
 
-console.log('Connecting to WebSocket server...');
+console.log('🔗 Connecting to DevShare server...');
 
-const ws = new WebSocket(wsUrl, {
-  headers: {
-    'Origin': serverUrl
-  }
-});
+const ws = new WebSocket(serverUrl);
 
 ws.on('open', () => {
-  const publicUrl = `${serverUrl}/${port}`;
-  console.log('\n🚀 Connected successfully!');
-  console.log(`📡 Your public URL: ${publicUrl}\n`);
+  console.log('✅ Connected to DevShare server!');
   
   // Send port information to the server
   ws.send(JSON.stringify({ port }));
+});
+
+ws.on('message', (data) => {
+  try {
+    const message = JSON.parse(data);
+    if (message.type === 'connected') {
+      console.log(`✨ Your local server is now public at: https://${message.subdomain}.quickhost.com`);
+    } else if (message.type === 'request') {
+      console.log(`📥 Incoming request: ${message.method} ${message.path}`);
+    }
+  } catch (err) {
+    console.error('Failed to parse message:', err);
+  }
 });
 
 ws.on('error', (error) => {
@@ -55,6 +55,7 @@ ws.on('close', () => {
 
 // Handle process termination
 process.on('SIGINT', () => {
+  console.log('\nShutting down...');
   ws.close();
   process.exit(0);
 });
