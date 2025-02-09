@@ -54,7 +54,7 @@ wss.on('connection', (ws) => {
           subdomain: clientSubdomain
         }));
 
-        console.log(`Client registered: ${clientSubdomain}.135.181.149.116:5000 -> localhost:${data.port}`);
+        console.log(`Client registered: ${clientSubdomain}.roastme.icu -> localhost:${data.port}`);
       }
     } catch (err) {
       console.error('Error processing message:', err);
@@ -64,7 +64,7 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     if (clientSubdomain) {
       clients.delete(clientSubdomain);
-      console.log(`Client unregistered: ${clientSubdomain}.135.181.149.116:5000`);
+      console.log(`Client unregistered: ${clientSubdomain}.roastme.icu`);
     }
   });
 });

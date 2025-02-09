@@ -49,7 +49,7 @@ checkLocalPort()
       try {
         const message = JSON.parse(data);
         if (message.type === 'connected') {
-          console.log(`✨ Your localhost:${port} is now public at: http://${message.subdomain}.135.181.149.116:5000`);
+          console.log(`✨ Your localhost:${port} is now public at: http://${message.subdomain}.roastme.icu`);
         } else if (message.type === 'request') {
           console.log(`📥 Incoming request: ${message.method} ${message.path}`);
         }
