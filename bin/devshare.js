@@ -14,7 +14,7 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 const port = argv.port;
-const serverUrl = 'ws://localhost:3000/ws';
+const serverUrl = 'ws://135.181.149.116:3000/ws';
 
 console.log('🔗 Connecting to DevShare server...');
 
@@ -31,7 +31,7 @@ ws.on('message', (data) => {
   try {
     const message = JSON.parse(data);
     if (message.type === 'connected') {
-      console.log(`✨ Your local server is now public at: https://${message.subdomain}.quickhost.com`);
+      console.log(`✨ Your local server is now public at: http://${message.subdomain}.roastme.icu`);
     } else if (message.type === 'request') {
       console.log(`📥 Incoming request: ${message.method} ${message.path}`);
     }
