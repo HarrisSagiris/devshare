@@ -3,6 +3,7 @@
 const WebSocket = require('ws');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
+const http = require('http');
 
 const argv = yargs(hideBin(process.argv))
   .option('port', {
@@ -14,53 +15,72 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 const port = argv.port;
-const serverUrl = 'wss://135.181.149.116:5000/ws'; // Changed to wss:// for SSL
+const serverUrl = 'ws://135.181.149.116:5000/ws'; // Using ws:// since server doesn't support SSL
 
-console.log('🔗 Connecting to DevShare server...');
+// First check if the local port is actually running
+const checkLocalPort = () => {
+  return new Promise((resolve, reject) => {
+    const req = http.get(`http://localhost:${port}`, (res) => {
+      resolve(true);
+    }).on('error', (err) => {
+      reject(err);
+    });
+    req.end();
+  });
+};
 
-const ws = new WebSocket(serverUrl, {
-  rejectUnauthorized: false // Allow self-signed certificates
-});
+console.log(`🔍 Checking if localhost:${port} is running...`);
 
-ws.on('open', () => {
-  console.log('✅ Connected to DevShare server!');
-  
-  // Send port information to the server
-  ws.send(JSON.stringify({ port }));
-});
+checkLocalPort()
+  .then(() => {
+    console.log(`✅ Found local server on port ${port}`);
+    console.log('🔗 Connecting to DevShare server...');
+    
+    const ws = new WebSocket(serverUrl);
 
-ws.on('message', (data) => {
-  try {
-    const message = JSON.parse(data);
-    if (message.type === 'connected') {
-      console.log(`✨ Your local server is now public at: http://${message.subdomain}.roastme.icu`);
-    } else if (message.type === 'request') {
-      console.log(`📥 Incoming request: ${message.method} ${message.path}`);
-    }
-  } catch (err) {
-    console.error('Failed to parse message:', err);
-  }
-});
+    ws.on('open', () => {
+      console.log('✅ Connected to DevShare server!');
+      
+      // Send port information to the server
+      ws.send(JSON.stringify({ port }));
+    });
 
-ws.on('error', (error) => {
-  console.error('WebSocket error:', error);
-  if (error.code === 'ECONNREFUSED') {
-    console.error('Could not connect to DevShare server. Is it running?');
-  }
-  if (error.code === 'EPROTO') {
-    console.error('SSL/TLS protocol error. The server may not support secure WebSocket connections.');
-  }
-  process.exit(1);
-});
+    ws.on('message', (data) => {
+      try {
+        const message = JSON.parse(data);
+        if (message.type === 'connected') {
+          console.log(`✨ Your localhost:${port} is now public at: http://${message.subdomain}.roastme.icu`);
+        } else if (message.type === 'request') {
+          console.log(`📥 Incoming request: ${message.method} ${message.path}`);
+        }
+      } catch (err) {
+        console.error('Failed to parse message:', err);
+      }
+    });
 
-ws.on('close', () => {
-  console.log('Connection closed');
-  process.exit(0);
-});
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      if (error.code === 'ECONNREFUSED') {
+        console.error('Could not connect to DevShare server. Is it running?');
+      }
+      process.exit(1);
+    });
 
-// Handle process termination
-process.on('SIGINT', () => {
-  console.log('\nShutting down...');
-  ws.close();
-  process.exit(0);
-});
+    ws.on('close', () => {
+      console.log('Connection closed');
+      process.exit(0);
+    });
+
+    // Handle process termination
+    process.on('SIGINT', () => {
+      console.log('\nShutting down...');
+      ws.close();
+      process.exit(0);
+    });
+
+  })
+  .catch((err) => {
+    console.error(`❌ No server found running on localhost:${port}`);
+    console.error('Please make sure your local server is running before using quickhost');
+    process.exit(1);
+  });

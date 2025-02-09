@@ -54,7 +54,7 @@ wss.on('connection', (ws) => {
           subdomain: clientSubdomain
         }));
 
-        console.log(`Client registered: ${clientSubdomain}.roastme.icu -> 135.181.149.116:${data.port}`);
+        console.log(`Client registered: ${clientSubdomain}.roastme.icu -> localhost:${data.port}`);
       }
     } catch (err) {
       console.error('Error processing message:', err);
@@ -86,9 +86,9 @@ app.use((req, res) => {
     path: req.url
   }));
 
-  // Proxy the request to Hetzner server with the client's port
+  // Proxy the request to localhost with the client's port
   proxy.web(req, res, {
-    target: `http://135.181.149.116:${client.port}`,
+    target: `http://localhost:${client.port}`,
     ws: true
   }, (err) => {
     if (err) {
@@ -104,6 +104,6 @@ proxy.on('error', (err) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, '135.181.149.116', () => {
-  console.log(`DevShare server running on 135.181.149.116:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`DevShare server running on port ${PORT}`);
 });
