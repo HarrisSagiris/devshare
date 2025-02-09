@@ -3,17 +3,49 @@ const http = require('http');
 const WebSocket = require('ws');
 const httpProxy = require('http-proxy');
 const crypto = require('crypto');
-const https = require('https');
-const fs = require('fs');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const path = require('path');
 
 const app = express();
 
-// Create HTTP server since SSL certs aren't available
+// MongoDB connection
+mongoose.connect('mongodb://localhost:27017/devshare', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+});
+
+// User Schema
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+
+// Middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
+
+// Enable CORS for the CLI client
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  next();
+});
+
+// Create HTTP server
 const server = http.createServer(app);
 
 const wss = new WebSocket.Server({ noServer: true });
 const proxy = httpProxy.createProxyServer({
-  // Add CORS headers to proxy responses
   changeOrigin: true,
   headers: {
     'Access-Control-Allow-Origin': '*',
@@ -47,16 +79,12 @@ wss.on('connection', (ws) => {
     try {
       const data = JSON.parse(message);
       if (data.port) {
-        // Generate unique subdomain
         clientSubdomain = generateSubdomain();
-        
-        // Store client info
         clients.set(clientSubdomain, {
           ws,
           port: data.port
         });
 
-        // Send subdomain back to client
         ws.send(JSON.stringify({
           type: 'connected',
           subdomain: clientSubdomain
@@ -77,7 +105,73 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Handle HTTP requests
+// Auth routes
+app.post('/api/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = new User({
+      email,
+      password: hashedPassword
+    });
+
+    await user.save();
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      'your_jwt_secret',
+      { expiresIn: '30d' }
+    );
+
+    res.status(201).json({ 
+      token,
+      message: 'Registration successful'
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Server error during registration' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      'your_jwt_secret',
+      { expiresIn: '30d' }
+    );
+
+    res.json({ 
+      token,
+      message: 'Login successful'
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error during login' });
+  }
+});
+
+// Handle HTTP requests for tunneling
 app.use((req, res) => {
   const hostname = req.hostname;
   const subdomain = hostname.split('.')[0];
@@ -87,7 +181,6 @@ app.use((req, res) => {
     return res.status(404).send('No client connected for this subdomain');
   }
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
@@ -95,14 +188,12 @@ app.use((req, res) => {
     return res.status(200).end();
   }
 
-  // Forward request details to client
   client.ws.send(JSON.stringify({
     type: 'request',
     method: req.method,
     path: req.url
   }));
 
-  // Proxy the request to localhost with the client's port
   proxy.web(req, res, {
     target: `http://localhost:${client.port}`,
     ws: true
@@ -119,7 +210,7 @@ proxy.on('error', (err) => {
   console.error('Proxy error:', err);
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 443;
 server.listen(PORT, () => {
   console.log(`DevShare server running on port ${PORT}`);
 });

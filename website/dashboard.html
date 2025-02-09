@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevShare Dashboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #f8f9fa;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 20px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+        }
+        .button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .button:hover {
+            background: #0052a3;
+            transform: translateY(-1px);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #495057;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+        }
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .stat-card {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .activity-feed {
+            margin-top: 2rem;
+        }
+        .activity-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        #dashboard {
+            display: none;
+        }
+        .chart {
+            width: 100%;
+            height: 300px;
+            margin-top: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginView">
+        <h1>🚀 DevShare Dashboard</h1>
+        
+        <div class="container">
+            <h2>Authentication</h2>
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button id="loginBtn" class="button">Login</button>
+                <button id="registerBtn" class="button">Register</button>
+            </div>
+            <div id="authStatus" class="status"></div>
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <nav class="navbar">
+            <div class="logo">🚀 DevShare</div>
+            <button id="logoutBtn" class="button">Logout</button>
+        </nav>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="activeLinksCount">-</div>
+                <div class="stat-label">Active Links</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalRequests">-</div>
+                <div class="stat-label">Total Requests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">99.9%</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Active Links</h3>
+                <div class="chart" id="linksChart"></div>
+                <div class="activity-feed" id="activeLinks">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="card">
+                <h3>Recent Activity</h3>
+                <div class="activity-feed" id="activityFeed">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://135.181.149.116:5000';
+
+        async function login(email, password) {
+            try {
+                const response = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Login failed');
+                }
+                
+                return data.token;
+            } catch (err) {
+                throw err;
+            }
+        }
+
+        async function register(email, password) {
+            try {
+                const response = await fetch(`${API_URL}/api/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Registration failed');
+                }
+                
+                return data.token;
+            } catch (err) {
+                throw err;
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            updateDashboard();
+        }
+
+        async function updateDashboard() {
+            try {
+                const token = localStorage.getItem('devshare_token');
+                const response = await fetch(`${API_URL}/api/dashboard`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch dashboard data');
+                }
+
+                const data = await response.json();
+                
+                // Update stats
+                document.getElementById('activeLinksCount').textContent = data.activeLinks.length;
+                document.getElementById('totalRequests').textContent = data.totalRequests;
+
+                // Update active links
+                const linksHtml = data.activeLinks.map(link => `
+                    <div class="activity-item">
+                        <strong>${link.subdomain}.roastme.icu</strong>
+                        <div>${link.requests} requests today | Port: ${link.port}</div>
+                    </div>
+                `).join('');
+
+                document.getElementById('activeLinks').innerHTML = linksHtml;
+
+                // Update activity feed
+                const activitiesHtml = data.recentActivity.map(activity => `
+                    <div class="activity-item">
+                        <div>${activity.action}</div>
+                        <div class="timestamp">${new Date(activity.timestamp).toRelative()}</div>
+                    </div>
+                `).join('');
+
+                document.getElementById('activityFeed').innerHTML = activitiesHtml;
+
+            } catch (err) {
+                console.error('Failed to update dashboard:', err);
+            }
+        }
+
+        async function saveToken(token) {
+            try {
+                localStorage.setItem('devshare_token', token);
+                showDashboard();
+            } catch (err) {
+                document.getElementById('authStatus').className = 'status error';
+                document.getElementById('authStatus').textContent = '❌ ' + err.message;
+            }
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const token = await login(email, password);
+                await saveToken(token);
+            } catch (err) {
+                document.getElementById('authStatus').className = 'status error';
+                document.getElementById('authStatus').textContent = '❌ ' + err.message;
+            }
+        });
+
+        document.getElementById('registerBtn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const token = await register(email, password);
+                await saveToken(token);
+            } catch (err) {
+                document.getElementById('authStatus').className = 'status error';
+                document.getElementById('authStatus').textContent = '❌ ' + err.message;
+            }
+        });
+
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('devshare_token');
+            document.getElementById('loginView').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+        });
+
+        // Check if already authenticated
+        window.addEventListener('load', async () => {
+            const token = localStorage.getItem('devshare_token');
+            if (token) {
+                try {
+                    const response = await fetch(`${API_URL}/api/verify-token`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        showDashboard();
+                    } else {
+                        localStorage.removeItem('devshare_token');
+                    }
+                } catch (err) {
+                    localStorage.removeItem('devshare_token');
+                }
+            }
+        });
+
+        // Poll for updates every 5 seconds
+        setInterval(updateDashboard, 5000);
+    </script>
+</body>
+</html>
