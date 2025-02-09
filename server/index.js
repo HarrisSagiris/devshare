@@ -98,7 +98,7 @@ proxy.on('error', (err) => {
   console.error('Proxy error:', err);
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, '135.181.149.116', () => {
   console.log(`DevShare server running on 135.181.149.116:${PORT}`);
 });
