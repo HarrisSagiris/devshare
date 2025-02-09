@@ -14,11 +14,13 @@ const argv = yargs(hideBin(process.argv))
   .argv;
 
 const port = argv.port;
-const serverUrl = 'ws://135.181.149.116:5000/ws';
+const serverUrl = 'wss://135.181.149.116:5000/ws'; // Changed to wss:// for SSL
 
 console.log('🔗 Connecting to DevShare server...');
 
-const ws = new WebSocket(serverUrl);
+const ws = new WebSocket(serverUrl, {
+  rejectUnauthorized: false // Allow self-signed certificates
+});
 
 ws.on('open', () => {
   console.log('✅ Connected to DevShare server!');
@@ -44,6 +46,9 @@ ws.on('error', (error) => {
   console.error('WebSocket error:', error);
   if (error.code === 'ECONNREFUSED') {
     console.error('Could not connect to DevShare server. Is it running?');
+  }
+  if (error.code === 'EPROTO') {
+    console.error('SSL/TLS protocol error. The server may not support secure WebSocket connections.');
   }
   process.exit(1);
 });

@@ -3,9 +3,17 @@ const http = require('http');
 const WebSocket = require('ws');
 const httpProxy = require('http-proxy');
 const crypto = require('crypto');
+const https = require('https');
+const fs = require('fs');
 
 const app = express();
-const server = http.createServer(app);
+
+// Create HTTPS server with SSL certificates
+const server = https.createServer({
+  key: fs.readFileSync('/etc/letsencrypt/live/roastme.icu/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/roastme.icu/fullchain.pem')
+}, app);
+
 const wss = new WebSocket.Server({ noServer: true });
 const proxy = httpProxy.createProxyServer();
 
